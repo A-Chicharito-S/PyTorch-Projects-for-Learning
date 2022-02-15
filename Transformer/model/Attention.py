@@ -24,7 +24,6 @@ class Attention(nn.Module):
         batch_size = Q.size(0)
         Q = self.W_Q(Q).view(batch_size, Q.size(1), self.num_heads, self.sub_dim).transpose(1, 2)
         # shape: (batch_size, seq_len, num_heads, sub_dim) ---> (batch_size, num_heads, seq_len_q, sub_dim)
-        ### what is the difference of reshape, view...?
         K = self.W_K(K).view(batch_size, K.size(1), self.num_heads, self.sub_dim).transpose(1, 2)
         # shape: (batch_size, num_heads, seq_len_kv, sub_dim)
         V = self.W_V(V).view(batch_size, V.size(1), self.num_heads, self.sub_dim).transpose(1, 2)
@@ -36,7 +35,6 @@ class Attention(nn.Module):
             att_score = att_score.masked_fill(mask, -1e9)
         att_score = F.softmax(att_score, dim=-1)
         # (batch_size, num_heads, seq_len_q, seq_len_kv)
-        ### what's the difference of log_softmax and softmax?
 
         if mask is not None:
             # att_score.masked_fill(mask == self.PAD, 0)
@@ -47,6 +45,5 @@ class Attention(nn.Module):
         outputs = torch.matmul(att_score, V).transpose(1, 2).contiguous().view(
             batch_size, -1, self.num_heads * self.sub_dim)
         # shape: (batch_size, num_heads, seq_len_q, sub_dim) ---> (batch_size, seq_len_q, num_heads, sub_dim)
-        ## what's the usage of .contiguous() ?
         return self.W_out(outputs)
         # shape: (batch_size, seq_len_q, dim)
