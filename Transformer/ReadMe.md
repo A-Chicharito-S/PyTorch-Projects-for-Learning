@@ -14,6 +14,7 @@ To run the code, please simply run '**test.py**' (where like [The Annotated Tran
 
 The sequence reconstruction result for [ 1  5 10  5  4  3  6  0  0  2] is: 
 > greedy search: [(1), 5, 10, 4, 5, 6, 3, 5, (2)]
+> 
 > beam search: [(1), 5, 10, 5, 4, 6, 3, 5, (2)]
  
 
