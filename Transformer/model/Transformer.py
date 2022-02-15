@@ -62,15 +62,6 @@ class TransformerBase(nn.Module):
         # batch_size, seq_len
         # the following masks are all created for targets, thus the key word 'target' is omitted for brevity
 
-
-        # pad_mask = self.create_pad_mask(targets).unsqueeze(1).unsqueeze(2)
-        # # shape: (batch_size, 1, seq_len)
-        # #### this mask is the mask of inputs????
-        # # print(pad_mask.shape)
-        # upper_triangle_mask = self.create_upper_triangle_mask(targets).unsqueeze(0).unsqueeze(1)
-        # # print(upper_triangle_mask.shape)  # 1, 1, seq_len, seq_len
-        # upper_triangle_mask = upper_triangle_mask + pad_mask
-
         pad_mask = self.create_pad_mask(targets).unsqueeze(1)
         # shape: (batch_size, 1, seq_len)
         # print(pad_mask.shape)
@@ -82,7 +73,6 @@ class TransformerBase(nn.Module):
         # the upper_triangle_mask should not only mask the unseen words but also the paddings
         targets = self.embedding_tgt(targets)
         outputs = self.decoder(from_encoder, targets, inputs_mask, upper_triangle_mask.unsqueeze(1).bool())
-        #### this is the inputs_mask, not the pad_mask for the targets
         outputs = F.log_softmax(self.projection(outputs), dim=-1)
         # shape: (batch_size, seq_len, dim ---> vocab)
         # outputs = torch.log(F.softmax(self.projection(outputs), dim=-1)+1e-15)
@@ -104,7 +94,6 @@ class TransformerBase(nn.Module):
         return sentences
 
     # of shape: (batch_size, generated_seq_len)
-    #### this might have a very big problem !!!
     def greedy(self, inputs_mask, from_encoder, max_generating_len):
         batch_size = from_encoder.size(0)
         device = from_encoder.device
@@ -135,24 +124,6 @@ class TransformerBase(nn.Module):
             # this is for all sentences since the <BOS> token should be removed
         return sentences
 
-    def greedy_decode(self, inputs_mask, from_encoder, max_generating_len):
-        # memory = model.encode(src, src_mask)
-        ys = torch.ones(1, 1).fill_(self.BOS).long().to(from_encoder.device)
-        for i in range(max_generating_len - 1):
-            upper_triangle_mask = self.create_upper_triangle_mask(ys).unsqueeze(0).unsqueeze(1)
-            embeddings = self.embedding_tgt(ys)
-            out = self.decoder(from_encoder, embeddings, None, upper_triangle_mask.bool())
-            # out = self.model.decode(memory, src_mask,
-            #                    Variable(ys),
-            #                    Variable(subsequent_mask(ys.size(1)).type_as(src.data)))
-            # prob = model.generator(out[:, -1])
-            prob = F.softmax(self.projection(out[:, -1]), dim=-1)
-            _, next_word = torch.max(prob, dim=1)
-            next_word = next_word.data[0]
-            ys = torch.cat([ys,
-                            torch.ones(1, 1).fill_(next_word).to(from_encoder.device).long()], dim=1)
-        return ys
-
     def beam_search(self, from_encoder, max_generating_len, beam_size):
         batch_size = from_encoder.size(0)
         device = from_encoder.device
@@ -179,8 +150,8 @@ class TransformerBase(nn.Module):
             # process like: log(x3) + {log(x1)+log(x2)} = log(x1·x2·x3)
             beam_prob, index = prob.view(batch_size, -1).topk(beam_size, dim=-1)
             # shape: (batch_size, k {out of beam_size*vocab}) ; value, index ; k = beam_size
-            ### note that should not reshape into (batch_size, beam, vocab) then use max on the last dim
-            ### top-k beams should always chose from beam_size*vocab beams.
+            # note that should not reshape into (batch_size, beam, vocab) then use max on the last dim
+            # top-k beams should always chose from beam_size*vocab beams.
             words = index % self.num_vocab_tgt  # the period of words is vocab
             beam_index = index // self.num_vocab_tgt  # shape: (batch_size, beam_size)
             # print('at time-step {}, the words:\n {} and beam_index:\n {} and prob:\n {}'.
