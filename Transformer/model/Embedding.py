@@ -15,7 +15,6 @@ class TransformerEmbedding(nn.Module):
             assert embedding_matrix.size(0) != num_vocab or embedding_matrix.size(1) != dim
             self.embedding.from_pretrained(embeddings=embedding_matrix, freeze=is_frozen)
             # if freeze is True: the embeddings will not be updated, otherwise, will be updated.
-        ### talk about the details of nn.Embedding!
         self.dropout = nn.Dropout(dropout_rate)
         self.register_buffer('PE', self.PositionalEncoding(max_seq_len=max_seq_len, dim=dim))
         self.layer_norm = nn.LayerNorm(dim)
