@@ -26,7 +26,7 @@ class framework(object):
         self.save_path = 'transformer_base'
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.model.cuda(self.device)
-        ### this is very important
+        # this is very important
 
     def run(self, num_batch, batch_size, mode='train'):
         if mode == 'train':
